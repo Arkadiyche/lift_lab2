@@ -32,8 +32,14 @@ class Queue(object):
     def len(self):
         return len(self._list)
 
+    def empty(self):
+        return len(self._list) == 0
+
     def pop(self):
-        return self._list.pop(0)
+        chel = self._list.pop(0)
+        if self.empty:
+            self._activate=False
+        return chel
 
     def step(self, time: float):
         self._time += time
@@ -42,3 +48,4 @@ class Queue(object):
             if self._timer[key] <= 0:
                 self._timer[key] = self._interval[key]
                 self._list.append(key)
+                self._activate = True
