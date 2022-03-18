@@ -1,7 +1,4 @@
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
 
 TOTAL_FLOOR = os.getenv('TOTAL_FLOOR', default=2)
 K_FLOOR = os.getenv('K_FLOOR', default=1)
