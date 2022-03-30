@@ -1,31 +1,33 @@
-from .config import K_FLOOR, TOTAL_FLOOR
+from config import K_FLOOR, TOTAL_FLOOR
 import math
 
-class Queue(object):
+class MyQueue(object):
     _time: float
     _floor: float
-    _list: list[int]
+    _list: list
     _intensity: dict
     _interval: dict
     _timer: dict
     _activate: bool
-    _timer: float
 
     def __init__(self, floor: float):
         self._time = 0
         self._floor = floor
         self._list = []
+        self._intensity = {}
+        self._interval = {}
+        self._timer = {}
         if self._floor == 1:
-            for i in range(TOTAL_FLOOR):
-                self._intensity[i+1] = math.log2(self._floor) if self._floor < K_FLOOR else math.log2(K_FLOOR) # per min
-                self._intensity[i+1] *= 60  # per sec
-                self._interval[i+1] = 1 / self._intensity
+            for i in range(1, TOTAL_FLOOR):
+                self._intensity[i+1] = math.log2(i + 1) if i + 1 < K_FLOOR else math.log2(K_FLOOR) # per min
+                self._intensity[i+1] /= 60  # per sec
+                self._interval[i+1] = 1 / self._intensity[i+1]
                 self._timer[i+1] = self._interval[i+1]
 
         else:
             self._intensity[1] = math.log2(self._floor) if self._floor < K_FLOOR else math.log2(K_FLOOR)
-            self._intensity[1] *= 60  # per sec
-            self._interval[1] = 1 / self._intensity
+            self._intensity[1] /= 60  # per sec
+            self._interval[1] = 1 / self._intensity[1]
             self._timer[1] = self._interval[1]
         self._activate = False
 
@@ -49,3 +51,6 @@ class Queue(object):
                 self._timer[key] = self._interval[key]
                 self._list.append(key)
                 self._activate = True
+
+    def __str__(self):
+        return f"floor #{self._floor}"
