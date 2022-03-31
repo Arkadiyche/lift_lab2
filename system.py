@@ -1,7 +1,7 @@
 from hashlib import new
 import math
 import queue
-from random import random
+import random
 from time import time
 from lift import Lift
 from typing import List
@@ -49,9 +49,9 @@ class System:
         target = max(transact.data.client.to, transact.data.client.tFrom)
 
         if target + 1 > self.k:
-            newTransact.endTime = time + 60. / math.log2(self.k)
+            newTransact.endTime = self.time + 60. / math.log2(self.k)
         else:
-            newTransact.endTime = time + 60. / math.log2(target + 1)
+            newTransact.endTime = self.time + 60. / math.log2(target + 1)
 
         self.transacts.append(newTransact)
 
@@ -90,4 +90,5 @@ class System:
             i += 1
 
         del self.queues[floor][0:goIn]
+
 
