@@ -13,7 +13,7 @@ class Lift:
     def total(self):
         return len(self.clients)
 
-    def goOutOnFloorCount(self, target: int):
+    def goOutOnFloorCount(self, target: int) -> int:
         count = 0
         for client in self.clients:
             if client.targetFloor == target:
