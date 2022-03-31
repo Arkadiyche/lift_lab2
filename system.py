@@ -127,9 +127,17 @@ class System:
             while f >= targetFloor:
                 if len(self.queues[f]):
                     targetFloor = f
-                    floorAboveFound = True
                     break
                 f -= 1
 
+            if targetFloor == 0:
+                self.lifts[liftIndex].movingUp = True
 
+        newTransact = Transact()
+        newTransact.type = TransactType.MoveLift
+        newTransact.data.lift.index = transact.data.lift.index
+        newTransact.data.lift.floor = targetFloor
+        newTransact.startTime = self.time
+        newTransact.endTime = self.time + self.liftMoveTime * abs(targetFloor - floor)
+        self.transacts.append(newTransact)
 
