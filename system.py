@@ -20,8 +20,20 @@ class System:
     endTime = TIME
     liftSize = CAPACITY_LIFT
 
+    task = 2
+
     def __init__(self) -> None:
         self.lift = []
         self.queues = []
         self.transacts = []
+
+    def addClient(self, transact: Transact):
+        client = Client()
+        client.targetFloor = transact.data.client.to
+        client.startTime = self.time
+        self.queues[transact.data.client.tFrom].append(client)
+
+
+
+
 
