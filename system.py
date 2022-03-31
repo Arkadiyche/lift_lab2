@@ -1,5 +1,6 @@
 from hashlib import new
 import math
+from pydoc import cli
 import queue
 import random
 from time import time
@@ -91,4 +92,46 @@ class System:
 
         del self.queues[floor][0:goIn]
 
+    def inOutAndMoveLift(self, transact: Transact):
+        lift = transact.data.lift
+        floor = lift.floor
+        liftIndex = lift.index
+
+        floorAboveFound = False
+        targetFloor = len(self.queues)
+        if self.lifts[liftIndex].movingUp:
+
+            for client in self.lifts[liftIndex].clients:
+                if client.targetFloor > floor and client.targetFloor < targetFloor:
+                    targetFloor = client.targetFloor
+                    floorAboveFound = True
+
+            if self.task != 2:
+                f = floor + 1
+                while f < targetFloor:
+                    if len(self.queues[f]):
+                        targetFloor = f
+                        floorAboveFound = True
+                        break
+                    f += 1
+
+        if not floorAboveFound or not self.lifts[liftIndex].movingUp:
+            self.lifts[liftIndex].movingUp = False
+            targetFloor = 0
+            for client in self.lifts[liftIndex].clients:
+                if client.targetFloor > floor and client.targetFloor < targetFloor:
+                    targetFloor = client.targetFloor
+            
+            f = floor - 1
+            while f >= targetFloor:
+                if len(self.queues[f]):
+                    targetFloor = f
+                    floorAboveFound = True
+                    break
+                f -= 1
+
+    def run(self):
+        i = 1
+        while i < len(self.queues):
+            i += 1
 
