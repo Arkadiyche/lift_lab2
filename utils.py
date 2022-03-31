@@ -1,8 +1,8 @@
 import random
 import math
 
-def rand(time: float, interval: float):
-    return random.uniform(time-interval, time+interval)
+def rand(a: float, b: float) -> float:
+    return random.uniform(a, b)
 
 
 def stay_on_floor(lift_count: int, floor_count: int, exiting_count: int, entering_count: int):
