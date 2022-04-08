@@ -52,6 +52,7 @@ class System:
             cls: List[Client] = []
             self.queues.append(cls)
         self.transacts = []
+        self.floorLiftIndices = []
         for i in range(self.numberOfFloors):
             self.floorLiftIndices.append(-1)
         self.stats = Stats()
