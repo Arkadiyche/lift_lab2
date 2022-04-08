@@ -14,10 +14,12 @@ from config import CAPACITY_LIFT, COUNT_LIFT, K_FLOOR, TIME, TIME_BETWEEN_FLOOR,
 class Stats:
     totalClientsMoved: int
     totalWaitTime: int
+    totalPeople: int
 
     def __init__(self):
         self.totalClientsMoved = 0
         self.totalWaitTime = 0
+        self.totalPeople = 0
 
 class System:
     lifts: List[Lift]
@@ -108,7 +110,7 @@ class System:
             i += 1
         for i in range(goIn):
             self.stats.totalWaitTime += self.time - self.queues[floor][i].startTime
-            print(self.time - self.queues[floor][i].startTime)
+            self.stats.totalPeople += 1
         del self.queues[floor][0:goIn]
 
     def inOutAndMoveLift(self, transact: Transact):
@@ -210,5 +212,5 @@ class System:
 
     def show(self):
         print(self.stats.totalClientsMoved)
-        print(float(self.stats.totalWaitTime) / float(self.stats.totalClientsMoved))
+        print(float(self.stats.totalWaitTime) / float(self.stats.totalPeople))
 
