@@ -28,6 +28,8 @@ class System:
 
     transacts: List[Transact]
 
+    floorLiftIndices: List[int]
+
     time = 0
 
     k = K_FLOOR
@@ -50,6 +52,9 @@ class System:
             cls: List[Client] = []
             self.queues.append(cls)
         self.transacts = []
+        self.floorLiftIndices = []
+        for i in range(self.numberOfFloors):
+            self.floorLiftIndices.append(-1)
         self.stats = Stats()
 
     def addClient(self, transact: Transact):
@@ -69,9 +74,9 @@ class System:
         target = max(transact.data.client.to, transact.data.client.tFrom)
 
         if target + 1 > self.k:
-            newTransact.endTime = self.time + 60. / math.log2(self.k)
+            newTransact.endTime = self.time + random.uniform(0, 2 * 60. / math.log2(self.k))
         else:
-            newTransact.endTime = self.time + 60. / math.log2(target + 1)
+            newTransact.endTime = self.time + random.uniform(0, 2 * 60. / math.log2(target + 1))
 
         self.transacts.append(newTransact)
 
@@ -91,7 +96,19 @@ class System:
         newTransact.type = TransactType.InOut
         newTransact.startTime = self.time
         newTransact.endTime = self.time + random.uniform(math.log2(goOut + goIn + 2), math.log2(liftTotal + len(self.queues[floor]) + 2))
+
+        ignoreThisFloor: bool = self.task == 2 and self.lifts[liftIndex].movingUp and floor != 0 and goOut == 0
+
+        ignoreThisFloor = ignoreThisFloor or (goOut == 0 and self.floorLiftIndices[floor] != -1 and self.floorLiftIndices[floor] != liftIndex)
+
+        if (goIn == 0 and goOut == 0) or ignoreThisFloor:
+            newTransact.endTime = self.time
+
         self.transacts.append(newTransact)
+
+        if ignoreThisFloor:
+            return
+        self.stats.totalClientsMoved += goOut
 
         clients = self.lifts[liftIndex].clients
 
@@ -113,51 +130,57 @@ class System:
             self.stats.totalPeople += 1
         del self.queues[floor][0:goIn]
 
-    def inOutAndMoveLift(self, transact: Transact):
+        if self.floorLiftIndices[floor] == liftIndex:
+            self.floorLiftIndices[floor] = -1
+
+    def moveLift(self, transact: Transact):
         lift = transact.data.lift
         floor = lift.floor
         liftIndex = lift.index
 
         floorAboveFound = False
-        targetFloor = len(self.queues)
+        targetFloor = floor
+
+        if floor == 0:
+            self.lifts[liftIndex].movingUp = True
+
         if self.lifts[liftIndex].movingUp:
 
             for client in self.lifts[liftIndex].clients:
-                if client.targetFloor > floor and client.targetFloor < targetFloor:
+                if client.targetFloor > floor:
                     targetFloor = client.targetFloor
                     floorAboveFound = True
 
-            if self.task != 2:
-                f = floor + 1
-                while f < targetFloor:
-                    if len(self.queues[f]):
-                        targetFloor = f
-                        floorAboveFound = True
-                        break
-                    f += 1
-
-        if not floorAboveFound or not self.lifts[liftIndex].movingUp:
-            self.lifts[liftIndex].movingUp = False
-            targetFloor = 0
-            for client in self.lifts[liftIndex].clients:
-                if client.targetFloor > floor and client.targetFloor < targetFloor:
-                    targetFloor = client.targetFloor
-            
-            f = floor - 1
-            while f >= targetFloor:
-                if len(self.queues[f]):
-                    targetFloor = f
+            f = floor + 1
+            while f < self.numberOfFloors:
+                if self.floorLiftIndices[f] == -1 and len(self.queues[f]):
+                    self.floorLiftIndices[f] = liftIndex
+                    floorAboveFound = True
                     break
-                f -= 1
-            if targetFloor == 0:
-                self.lifts[liftIndex].movingUp = True
+                f += 1
+
+            if floorAboveFound:
+                targetFloor = floor + 1
+            elif floor != 0:
+                self.lifts[liftIndex].movingUp = False
+
+        if not self.lifts[liftIndex].movingUp:
+            targetFloor = floor - 1
 
         newTransact = Transact()
         newTransact.type = TransactType.MoveLift
         newTransact.data.lift.index = transact.data.lift.index
         newTransact.data.lift.floor = targetFloor
         newTransact.startTime = self.time
-        newTransact.endTime = self.time + self.liftMoveTime * abs(targetFloor - floor)
+        if targetFloor != floor:
+            newTransact.endTime = self.time + self.liftMoveTime * abs(targetFloor - floor)
+        else:
+            nextTransactTime: float = self.time
+            for t in self.transacts:
+                if t.endTime > self.time:
+                    nextTransactTime = t.endTime
+                    break
+            newTransact.endTime = nextTransactTime
         self.transacts.append(newTransact)
 
     def run(self):
@@ -169,7 +192,7 @@ class System:
             newTransact.data.client.tFrom = 0
             newTransact.data.client.to = i
             newTransact.startTime = self.time
-            newTransact.endTime = self.time + 60./math.log2(d + 1)
+            newTransact.endTime = self.time + random.uniform(0, 2 * 60./math.log2(d + 1))
             self.transacts.append(newTransact)
             newTransact2 = Transact()
             newTransact2.type = TransactType.AddClient
@@ -180,6 +203,8 @@ class System:
             self.transacts.append(newTransact2)
             i += 1
 
+        self.transacts = sorted(self.transacts, key=lambda t: t.endTime)
+
         i = 0
         while i < len(self.lifts):
             newTransactLift = Transact()
@@ -187,7 +212,7 @@ class System:
             newTransactLift.data.lift.floor = 0
             newTransactLift.data.lift.index = i
             newTransactLift.startTime = self.time
-            newTransactLift.endTime = self.time + 60
+            newTransactLift.endTime = self.transacts[0].endTime
             self.transacts.append(newTransactLift)
             i += 1
 
@@ -202,7 +227,7 @@ class System:
                 elif transact.type == TransactType.MoveLift:
                     self.liftArrived(transact)
                 elif transact.type == TransactType.InOut:
-                    self.inOutAndMoveLift(transact)
+                    self.moveLift(transact)
                 else:
                     print("error")
                     break
